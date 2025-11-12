@@ -13,6 +13,8 @@ Code from my independent video game made in Godot 4, using GDScript (a variation
 | `GDManager.gd` | Global shield: timer, collision, audio, sync logic |
 | `GameManager.cs` | Central state manager (player/world index, death flags) |
 | `player.gd` → `player1.gd` | State machine + scene inheritance |
+| `AudioManager.gd` | Global Script that controls all audio output, including music and sound effects |
+| `base_scene.gd` | Level class script; Life system, player 3's super-speed mechanics, world switching animations, game over screens, etc. |
 
 ---
 
