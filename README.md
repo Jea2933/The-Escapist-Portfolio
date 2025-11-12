@@ -4,7 +4,7 @@ Code from my independent video game made in Godot 4, using GDScript (a variation
 
 **Solo Developer | Godot 4 | C# + GDScript**
 
-## The Hard Problem
+## Key Feature
 > Sync **3 characters across 3 identical worlds** in real time — shared position, shared abilities, auto-switch on input.
 
 ## Key Systems
