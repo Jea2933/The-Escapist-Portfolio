@@ -1,22 +1,26 @@
 #The base level class script that most levels inherit from. It comes with most of the basic necessities to create a level in my game, including heart (lives) instantiation, player 3's super-speed mechanics, world switching animations, game over screens, and more!
 
+# creates a class for other levels to use as a base structure
 class_name BaseScene extends Node
 
+# player variables using Nodes placed in the scene tree- all levels must have these!
 @onready var Player1: Player = $Player1
 @onready var Player2: Player = $Player2
 @onready var Player3: Player = $Player3
-@onready var PlayerScript = $CharacterBody2D
+# @onready var PlayerScript = $CharacterBody2D (used for testing)
 
+# Preloaded Heart GUI icons 
 var hearts = preload("res://Useful Stuff/2D RPG Tutorial/Heart GUI/heartGui.tscn")
 var heartscontainer = preload("res://Useful Stuff/2D RPG Tutorial/Heart GUI/heartsContainer.tscn")
 
+# animation player used for level switching animations
 @onready var LevelAnimation = $AnimationPlayer
 
-
+# bullet instantiation for enemy attacks
 @onready var bullet_scene = preload("res://Bullet.tscn")
 @onready var bullet = bullet_scene.instantiate()
 
-
+# timer used for limiting super-speed (for game balance)
 var cancel_timer := false
 
 #@onready var heartsContainer = $CanvasLayer/heartsContainer
@@ -29,21 +33,21 @@ func _ready():
 	
 	
 	GDManager.teleport_limit_current = GDManager.teleport_limit_max
-	# Ensure the health values are set correctly before updating the GUI
-	GDManager.heartsContainer = $CanvasLayer/heartsContainer
-	GDManager.heartsContainer2 = $CanvasLayer/heartsContainer2
-	GDManager.heartsContainer3 = $CanvasLayer/heartsContainer3
+	# Sets the player heart container variables in GDManager to their respective nodes in the scene tree
+	GDManager.heartsContainer = $CanvasLayer/heartsContainer # heart containers for Player 1
+	GDManager.heartsContainer2 = $CanvasLayer/heartsContainer2 # heart containers for Player 2
+	GDManager.heartsContainer3 = $CanvasLayer/heartsContainer3 # heart containers for Player 3
 	
-	GDManager.player1currentHealth = GDManager.player1currentHealth  # Ensure the correct value
-	GDManager.player2currentHealth = GDManager.player2currentHealth  # Same for player 2
-	GDManager.player3currentHealth = GDManager.player3currentHealth  # Same for player 3
+	GDManager.player1currentHealth = GDManager.player1currentHealth  
+	GDManager.player2currentHealth = GDManager.player2currentHealth  
+	GDManager.player3currentHealth = GDManager.player3currentHealth  
 
-	# Set max hearts before GUI update
+	# Set max hearts for each player (including added hearts via player upgrades)
 	GDManager.heartsContainer.setMaxHearts(GDManager.player1maxHealth)
 	GDManager.heartsContainer2.setMaxHearts(GDManager.player2maxHealth)
 	GDManager.heartsContainer3.setMaxHearts(GDManager.player3maxHealth)
 
-	# Use deferred calls to ensure GUI updates happen after the scene is fully initialized
+	# A deferred call to ensure GUI updates happen after the scene is fully initialized
 	call_deferred("update_health_gui")
 
 	# Connect the healthChanged signals to update the GUI when health changes
@@ -51,92 +55,81 @@ func _ready():
 	Player2.healthChanged2.connect(GDManager.heartsContainer2.updateHearts2)
 	Player3.healthChanged3.connect(GDManager.heartsContainer3.updateHearts3)
 
-	##$Timer.start(timer_delay)  # Start any timers if needed
+	# $Timer.start(timer_delay) #placeholder timer used in other inherited level scripts
 	
-	
+	# Ensures that Player 3 is never slowing down time when entering a new scene
 	if GDManager.timeSlowed == true:
 		GDManager.timeSlowed = false
 	
-	# Function to update the health GUI after scene is loaded
+# Function to update the health GUI after scene is loaded
 func update_health_gui():
 	GDManager.heartsContainer.updateHearts(GDManager.player1currentHealth)
 	GDManager.heartsContainer2.updateHearts2(GDManager.player2currentHealth)
 	GDManager.heartsContainer3.updateHearts3(GDManager.player3currentHealth)
-	
-	
-	#OLD _Ready CODE: await get_tree().create_timer(0.1).timeout
-	##GDManager.player3currentHealth = GDManager.player3maxHealth
-	##GDManager.apply_shield_state()
-	#
-	#heartsContainer.setMaxHearts(GDManager.player1maxHealth)
-	#heartsContainer.updateHearts(GDManager.player1currentHealth)
-	#Player1.healthChanged.connect(heartsContainer.updateHearts)
-	#
-	###$Timer.start(timer_delay) 
-	#
-	#heartsContainer2.setMaxHearts(GDManager.player2maxHealth)
-	#heartsContainer2.updateHearts2(GDManager.player2currentHealth)
-	#Player2.healthChanged2.connect(heartsContainer2.updateHearts2)
-	#
-	#heartsContainer3.setMaxHearts(GDManager.player3maxHealth)
-	#heartsContainer3.updateHearts3(GDManager.player3currentHealth)
-	#Player3.healthChanged3.connect(heartsContainer3.updateHearts3)
-	
-	
-	
-	
+
+# Function for initiating Player 3's super-speed. 
+# Toggles "timeSlowed()" with space bar
 func _input(event):
-	#if event.is_action_pressed("ui_space"):
-		#if GameManager.current_player_index == 2:
-			#slowTime()			
 	if event.is_action_pressed("ui_space"):
-		if !GDManager.synced:
+		if !GDManager.synced: # the main code that will be used
 			timeSlowed()
-		if GDManager.synced:
+		if GDManager.synced: # only used conditionally
 			timeSlowed_Synced()	
-		
-			
+
+# Creates a blinking animation when the player transitions from one world to another
 func change():
-	
 		$ColorRect.visible = true
 		LevelAnimation.play("change_world")
 		await LevelAnimation.animation_finished
 		$ColorRect.visible = false
-				
+
+# The main function used for super-speed, or slowing down time; the function speeds up the player while slowing down enemies
 func timeSlowed():
+	# Always sets to Player 3 and World 3 (their respective world)
 	GameManager.current_player_index = 2
 	GameManager.current_world_index = 2
+	# If player 3 is dead, then the player cannot use super-speed and the code stops here
 	if GameManager.player3dead:
 		return
+	#toggles the ability on and off by toggling "timeSlowed" to be true or false
 	GDManager.timeSlowed = !GDManager.timeSlowed
 	print("timeSlowed: ", GDManager.timeSlowed)
 	if GDManager.timeSlowed:
+		# commented code used for design testing
 		#if !GameManager.current_player_index == 2:
 			#GameManager.current_player_index = 2
 			#GameManager.current_world_index = 2
+		# increases the walking speed of all players greatly; characters are now using "super-speed"
 		Player1.speed = 300
 		Player2.speed = 300
 		Player3.speed = 300
+		# sets the collision masks and layers of all players to 0
+		# this allows players to use super-speed without bumping into things constantly
 		Player1.set_collision_layer(0)
 		Player1.set_collision_mask(0)
 		Player2.set_collision_layer(0)
 		Player2.set_collision_mask(0)
 		Player3.set_collision_layer(0)
 		Player3.set_collision_mask(0)
-		AudioManager.setPitch("BT", .90)
+		# slows down the currently selected music by 10%; creates an audible slowdown effect
+		AudioManager.setPitch("BT", .90) # "BT" is the name of the song being used (placeholder), while .90 is the song's new slowed tempo
+		# slows down the speed and animation speed of all enemies and objects with the tag "Slowable"
+		# creates an illusion of super-speed by slowing everything else down significantly
 		for Slowable in get_tree().get_nodes_in_group("Slowable"):
 				if Slowable.has_node("AnimationPlayer"):
 					Slowable.get_node("AnimationPlayer").speed_scale = 0.05
 				if "speed" in Slowable:
 					Slowable.speed = .30 #was .30
-		#var timer := get_tree().create_timer(8.0)
+					
+		# placeholder timer for debugging
+		# var timer := get_tree().create_timer(8.0)
 		
-		GDManager.speed_timer.start() #this variable connects to your speed timer UI
-		while GDManager.speed_timer.time_left > 0: #while there's still time left on your timer
-			if GDManager.timeSlowed == false: #IF you press space while time is slowed, which sets the time back to normal...
-				cancel_timer = true #Then the timer is cancelled
+		GDManager.speed_timer.start() # this variable connects to the UI that tells you how long super-speed will last
+		while GDManager.speed_timer.time_left > 0: # while there's still time left on your timer
+			if GDManager.timeSlowed == false: # and IF you press space while time is slowed, which sets the timer back to its initial state...
+				cancel_timer = true # Then the timer is cancelled
 				
-			if cancel_timer: #Since you cancelled the timer, the cancel_timer variable will set to false again, and time goes back to normal
+			if cancel_timer: # If the timer is cancelled, the cancel_timer variable will set to false again, and time goes back to normal
 				GDManager.speed_timer.stop() #resets the UI circle if you press space while time is slowed (and reset things back to normal)
 				cancel_timer = false
 				AudioManager.setPitch("BT", 1.0)
@@ -517,3 +510,4 @@ func _process(delta: float) -> void:
 		GDManager.heartsContainer2.updateHearts2(Player2.player2maxHealth)
 	if GameManager.player3revived:
 		GDManager.heartsContainer3.updateHearts3(3)
+		
